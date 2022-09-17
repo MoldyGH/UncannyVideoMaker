@@ -1,5 +1,0 @@
-pov: you find this
-pov: you look this video
-pov: you walk to this
-pov: you die by this
-pov: you see

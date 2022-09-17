@@ -16,26 +16,28 @@ public class GameManager : MonoBehaviour
 
     public Image mrIncredible, uncannyPhoto;
 
-    public bool RandomizeImages = false;
+    bool randomizeImages, clipBasedLength;
 
     public string[] Images = new string[1];
 
-    string[] sequenceTimes, subtitles, titles;
+    string[] sequenceTimes, subtitles, titles, extraSettings;
 
     public AudioSource audioPlayer;
     public AudioClip[] clips;
+
+    int numberOfPhases;
     void Start()
     {
         Cursor.visible = false;
         pathToAssets = Path.Combine(Application.streamingAssetsPath, PlayerPrefs.GetString("CurrentVideo"));
+        numberOfPhases = Directory.GetFiles(Path.Combine(pathToAssets, "phases"), "*.png").Length - 1;
 
         SetTitle();
         GetSubtitles();
         GetSequenceTimes();
+        GetExtraSettings();
 
-        RandomizeImages = PlayerPrefs.GetInt("RandomizeOrder", 0) == 1;
-
-        if (RandomizeImages)
+        if (randomizeImages)
         {
             Images = Directory.GetFiles(Path.Combine(pathToAssets, "images"),"*.png");
             Images = Images.OrderBy(x => UnityEngine.Random.Range(-1f,1f)).ToArray();
@@ -88,10 +90,40 @@ public class GameManager : MonoBehaviour
     {
         sequenceTimes = File.ReadAllLines(Path.Combine(pathToAssets, "text", "timebetweenphases.txt"));
     }
+    public void GetExtraSettings()
+    {
+        extraSettings = File.ReadAllLines(Path.Combine(pathToAssets, "text", "extrasettings.txt"));
+        foreach(string setting in extraSettings)
+        {
+            string[] currentSetting = setting.Trim().Split('=');
+            
+            if(currentSetting[0] == "randomize_images")
+            {
+                randomizeImages = currentSetting[1] == "true";
+            }
+            else if(currentSetting[0] == "length_based_on_clip")
+            {
+                clipBasedLength = currentSetting[1] == "true";
+            }
+        }
+    }
+    public float SetSequenceTimes()
+    {
+        float time = 0;
+        if (clipBasedLength)
+        {
+            time = audioPlayer.clip.length;
+        }
+        else
+        {
+            time = float.Parse(sequenceTimes[uncannyIndex]);
+        }
+        return time;
+    }
     IEnumerator StartNewPhase()
     {
         mrIncredible.sprite = LoadImage(Path.Combine(pathToAssets, "phases", $"{uncannyIndex}.png"));
-        if (RandomizeImages)
+        if (randomizeImages)
         {
             uncannyPhoto.sprite = LoadImage(Images[uncannyIndex]);
             subtitleText.text = Path.GetFileNameWithoutExtension(Images[uncannyIndex]);
@@ -103,9 +135,9 @@ public class GameManager : MonoBehaviour
         }
         audioPlayer.clip = LoadClip(Path.Combine(pathToAssets, "music", $"{uncannyIndex}.wav"));
         audioPlayer.Play();
-        yield return new WaitForSeconds(float.Parse(sequenceTimes[uncannyIndex]));
+        yield return new WaitForSeconds(SetSequenceTimes());
         uncannyIndex++;
-        if(uncannyIndex < sequenceTimes.Length)
+        if (uncannyIndex <= numberOfPhases)
         {
             StartCoroutine(StartNewPhase());
         }
