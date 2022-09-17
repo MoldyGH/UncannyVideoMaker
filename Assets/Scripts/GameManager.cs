@@ -5,6 +5,7 @@ using System.IO;
 using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
@@ -14,6 +15,10 @@ public class GameManager : MonoBehaviour
     public TMP_Text titleText, subtitleText;
 
     public Image mrIncredible, uncannyPhoto;
+
+    public bool RandomizeImages = false;
+
+    public string[] Images = new string[1];
 
     string[] sequenceTimes, subtitles, titles;
 
@@ -27,6 +32,14 @@ public class GameManager : MonoBehaviour
         SetTitle();
         GetSubtitles();
         GetSequenceTimes();
+
+        RandomizeImages = PlayerPrefs.GetInt("RandomizeOrder", 0) == 1;
+
+        if (RandomizeImages)
+        {
+            Images = Directory.GetFiles(Path.Combine(pathToAssets, "images"),"*.png");
+            Images = Images.OrderBy(x => UnityEngine.Random.Range(-1f,1f)).ToArray();
+        }
 
         StartCoroutine(StartNewPhase());
     }
@@ -78,8 +91,16 @@ public class GameManager : MonoBehaviour
     IEnumerator StartNewPhase()
     {
         mrIncredible.sprite = LoadImage(Path.Combine(pathToAssets, "phases", $"{uncannyIndex}.png"));
-        uncannyPhoto.sprite = LoadImage(Path.Combine(pathToAssets, "images", $"{uncannyIndex}.png"));
-        subtitleText.text = subtitles[uncannyIndex];
+        if (RandomizeImages)
+        {
+            uncannyPhoto.sprite = LoadImage(Images[uncannyIndex]);
+            subtitleText.text = Path.GetFileNameWithoutExtension(Images[uncannyIndex]);
+        }
+        else
+        {
+            uncannyPhoto.sprite = LoadImage(Path.Combine(pathToAssets, "images", $"{uncannyIndex}.png"));
+            subtitleText.text = subtitles[uncannyIndex];
+        }
         audioPlayer.clip = LoadClip(Path.Combine(pathToAssets, "music", $"{uncannyIndex}.wav"));
         audioPlayer.Play();
         yield return new WaitForSeconds(float.Parse(sequenceTimes[uncannyIndex]));

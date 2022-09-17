@@ -13,12 +13,15 @@ public class TitleManager : MonoBehaviour
     public TMP_InputField input;
 
     public Slider volumeSlider;
+    public Toggle randomizeOrder;
     public AudioMixer mixer;
     void Start()
     {
         Cursor.visible = true;
         listThing.text = string.Empty;
         mixer.SetFloat("volume", PlayerPrefs.GetFloat("Volume", 0));
+        randomizeOrder.isOn = PlayerPrefs.GetInt("RandomizeOrder", 0) == 1;
+
         volumeSlider.value = PlayerPrefs.GetFloat("Volume", 0);
 
         DirectoryInfo directoryInfo = new DirectoryInfo(Application.streamingAssetsPath);
@@ -41,5 +44,10 @@ public class TitleManager : MonoBehaviour
     {
         mixer.SetFloat("volume", volumeSlider.value);
         PlayerPrefs.SetFloat("Volume", volumeSlider.value);
+    }
+
+    public void ChangeOrderRandom()
+    {
+        PlayerPrefs.SetInt("RandomizeOrder", randomizeOrder.isOn == true ? 1 : 0);
     }
 }
